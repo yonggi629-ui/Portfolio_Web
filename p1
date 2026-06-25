@@ -1,245 +1,1067 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YG 용갈 | Portfolio</title>
 
-## Goal
-- Build **one self-contained `index.html`** portfolio site for a film/video student, wired to Supabase for data and file storage.
--O utput must be a single downloadable HTML file. Deploy target: Vercel.
- 
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
 
-## Tech stack
-HTML (single file) · Vite · Supabase (Postgres + Storage) · Vercel.
+  <style>
+    /* ==========================================================================
+       Design System & Variables (Dark Theme)
+       ========================================================================== */
+    :root {
+      /* Backgrounds */
+      --card-bg: #141414;          
+      --sub-bg: rgba(255, 255, 255, 0.08); 
+      
+      /* Buttons */
+      --btn-default: rgba(255, 255, 255, 0.12);
+      --btn-hover: rgba(255, 255, 255, 0.2);
+      --btn-active: #FFFFFF;
+      
+      /* Typography */
+      --text-main: #FFFFFF;
+      --text-muted: #AAAAAA;
+      
+      /* Shadows */
+      --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.6);
+      --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.8);
+      
+      /* Borders */
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+    }
 
-## Constants — declare at the top of the file and use everywhere
-```js
-const VITE_SUPABASE_URL = "";   // .supabase.co (NOT .com)
-const VITE_SUPABASE_PUBLISHABLE_KEY = "";
-const VITE_SUPABASE_STORAGE_BUCKET = "portfolio-media";
-const VITE_YOUTUBE_CHANNEL_URL = "https://www.youtube.com/";
-const VITE_INSTAGRAM_URL = "https://www.instagram.com/";   // TODO: set the real Instagram URL
-const VITE_LOGO_SRC = "./logo.png";                        // TODO: replace with the TPC logo (file next to index.html, base64 data URI, or inline SVG)
-```
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Pretendard', sans-serif;
+      /* 블랙 그라데이션 배경 */
+      background: linear-gradient(135deg, #222222 0%, #000000 100%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
 
-## Brand & copy
-- **Logo replaces all hero text.** Render the given company logo at the top-left of the navbar. 
-— the logo alone represents the brand.
-  - TPC logo: bold, black ‘YG’ text, and the white wordmark **용갈이** beneath. May be embedded as an inline SVG so the file stays self-contained.
-- **Clicking the logo returns to the main home (the Portfolio page)** and scrolls to top. Use a pointer cursor so it reads as a home link.
-- Keep the following strings in **Korean exactly as written** (do not translate):
-  - Profile field labels: **이름**, **한 줄 소개**, **관심 분야**
-  - Footer (render exactly):
-    ```
-    영화사 길 | 대장 이용길
-    email: 알아서 뭐하게
-    address: 안드로메다
-    Copyright @ Yonggil Lee 2026 
-    ```
-- Sidebar button labels (English): **Profile**, **Portfolio**, **Create**.
-- Profile image upload button label (English): **Image upload**.
-- All other UI copy is in English.
+    ::placeholder {
+      color: var(--text-muted);
+      opacity: 1;
+    }
 
-## Color system
-- Main (background): `#FFFFFF`
-- Sub (secondary surfaces, sidebar): `#F5F5F5`
-- **Buttons — unified gray across every page** (no blue/accent buttons anywhere):
-  - Default: background `#E0E0E0`, text `#333333`.
-  - Hover: background `#D0D0D0`.
-  - Active/selected (e.g. current sidebar tab): background `#9E9E9E`, text `#FFFFFF`.
-- Use solid fills plus subtle shadows for depth. The brand blue (`#1659D6`) appears **only inside the logo** — never as a page background, border, or button.
+    button {
+      font-family: inherit;
+      border: none;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.2s ease;
+    }
 
-## Design direction — simple, Pinterest-inspired gallery
-- **Reference: Pinterest portfolio aesthetic.** Masonry card grid, image-first, minimal chrome, content does the talking.
-- Typography: **Pretendard** throughout.
-- Horizontal page padding: **10% left and right.**
-- **No layout lines / dividers / borders.** No navbar bottom border, no sidebar border, no rule lines between sections. Separate regions with whitespace, background-shade contrast (Main vs Sub), and restrained shadows only.
-- Cards, modals, and forms must read clearly and feel uncluttered.
-- Fully responsive: text and buttons never overlap on mobile or desktop.
+    input, textarea {
+      font-family: inherit;
+      border: none;
+      outline: none;
+      background-color: var(--sub-bg);
+      color: var(--text-main);
+      padding: 16px;
+      border-radius: var(--radius-sm);
+      font-size: 16px;
+      width: 100%;
+      transition: box-shadow 0.2s ease;
+    }
 
-### Avoid (no generic "AI-generated" look)
-- No purple/indigo gradient defaults, no rainbow gradients, no glassmorphism.
-- No emoji used as UI icons; use simple line icons.
-- No oversized hero section, no decorative filler. Treat it like a clean editorial gallery for a filmmaker.
+    input:focus, textarea:focus {
+      box-shadow: inset 0 0 0 2px var(--btn-hover);
+    }
 
-## Top navbar (height 80px)
-- **Left:** company logo (`VITE_LOGO_SRC` / inline TPC SVG), ~48px height, width auto. No title/subtitle text. Clicking it returns to Portfolio (home) and scrolls to top.
-- **Right:** three social icon links rendered as simple line/brand icons (no text labels):
-  - YouTube → `VITE_YOUTUBE_CHANNEL_URL`
-  - Instagram → `VITE_INSTAGRAM_URL`
-  - Threads → `VITE_THREADS_URL`
-  - Each opens in a new tab. Icon size ~24px, gray (`#333333`), subtle hover.
-- **No bottom border** on the navbar.
+    /* Buttons */
+    .btn {
+      background-color: var(--btn-default);
+      color: var(--text-main);
+      padding: 12px 24px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 15px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn:hover { background-color: var(--btn-hover); }
 
-## Left sidebar (narrow)
-- Background: Sub color. **No border** — separated from content by background contrast and whitespace only.
-- **Narrow width** (~120px), icon-forward.
-- Buttons: **Portfolio**, **Profile**, **Create**. Each has its icon **above** its label. Font: Pretendard Bold, ~14–16px (scaled to the narrow bar).
-- Buttons use the unified **gray** palette; the active button uses the gray active state (`#9E9E9E` background, white text).
-- Place the **Create** button on its own, slightly above the bottom of the sidebar.
-- Icons: Profile = person, Portfolio = briefcase, Create = "+".
-- Clicking a button switches to that page (single-page client routing). On every page switch, scroll the content to the top.
+    /* ==========================================================================
+       Layout
+       ========================================================================== */
+    #app-container {
+      display: flex;
+      width: 100%;
+      min-height: 100vh;
+    }
 
-## Pages
+    /* 🔥 Sidebar (좌측 호버 시 등장) 🔥 */
+    #sidebar {
+      position: fixed; 
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 120px;
+      
+      background-color: rgba(15, 15, 15, 0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.8);
+      
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 0;
+      z-index: 1000;
+      
+      transform: translateX(-120px);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
 
-### Profile
-- Left ~40%: square profile image area (up to 700×700px, responsive). 4px gap below it, then the **Image upload** button (gray).
-- Profile image: upload, replace, save. Show an immediate local preview of a newly chosen image before saving.
-- **Resume: upload, replace, save — with an inline preview.**
-  - Accept `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`.
-  - On selecting a file (before saving) **and** when an existing resume is loaded, render a **preview**:
-    - Image file → thumbnail `<img>` (max-height ~380px, contained).
-    - PDF file → embedded `<iframe>` preview (~420px tall, white background).
-    - Other/unknown → fallback "open file" link.
-  - Also show an "Open in new tab" link for the stored resume.
-- **본인 이름**, **한줄 소개**, **관심 분야**: single-line white text inputs, editable and saved.
-- All Profile data persists to the `profile` table; image/resume to Storage. On save failure, keep inputs and clean up any just-uploaded files.
+    #sidebar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: -30px; 
+      width: 30px;
+      height: 100%;
+      background: transparent;
+    }
 
-### Portfolio (default landing — and the logo's home target)
-- Pinterest-style responsive **masonry** grid; show the grid immediately.
-- **Card width: narrow and uniform** (~240px). **Card height varies per item, following the media's natural aspect ratio** (true masonry — staggered heights, no fixed/cropped card height). Each card shows cover image, title, author.
-- **Hover interaction:**
-  - On hover over a card's media, change the overlay shading (smooth dark overlay transition) to signal interactivity.
-  - If the card's media is a **video**, it **auto-plays on hover** (muted, looped, inline) and pauses/resets when the pointer leaves.
-- Posts with **video only** (no image) must still render as cards (use the video frame as the cover).
-- **Card click → detail modal** (polished, gallery-style):
-  - Shows title (bold, ~24px), author rendered as muted "by {author}", content, and the generation prompt in a soft rounded card with an uppercase letter-spaced "GENERATION PROMPT" label.
-  - Media priority: an uploaded/direct video (`posts.video_url`) plays via `<video controls>`; otherwise a `posts.youtube_url` plays via a responsive 16:9 YouTube `<iframe>` embed; otherwise show the image with rounded top corners. (On portfolio cards, a YouTube post uses its thumbnail `https://img.youtube.com/vi/{id}/hqdefault.jpg` as the cover; the full player opens in the modal.)
-  - **No empty media gap:** hide the media area entirely when there is no media, and remove broken images on error (`onerror`) so hotlink-blocked URLs don't leave blank space. Empty author/content/tags collapse rather than leaving gaps. Trim leading/trailing whitespace on all text.
-  - A floating round **×** close button sits at the top-right; **Edit** and **Delete** (gray) are right-aligned in the footer.
-  - Subtle entrance: backdrop fade + a gentle pop/scale-in. Rounded corners (~20px), deep shadow, max-width ~680px.
+    #sidebar:hover {
+      transform: translateX(0);
+    }
 
-### Create — Post CRUD (implement in code)
-**Create form fields**: title, content, author, image file, **MP4 video file _or_ a pasted video URL**, and a dedicated **Generation Prompt** input area (multi-line textarea, persists to `posts.prompt`).
-- **Video input — file or URL:** accept either an uploaded `.mp4` file **or** a pasted video URL.
-  - A pasted **YouTube** link (watch / `youtu.be` / shorts / embed forms) is saved to `posts.youtube_url`; any other (direct) video link is saved to `posts.video_url`.
-  - A freshly uploaded file wins and supersedes any previous URL (clear the other column on save).
-  - On edit, surface an existing URL (YouTube or pasted direct link) in the URL field so it can be changed; uploaded files show a "(current video kept)" note.
-- Either an image **or** an MP4 is enough to save (image-less, video-only posts allowed).
-- On save: upload files to Storage, store public URLs in `posts`.
-- If saving fails, **keep the entered text and selected files** and clean up any just-uploaded files. Reset the form **only on success**.
+    .nav-btn {
+      background: transparent;
+      color: var(--text-muted);
+      width: 80px;
+      height: 80px;
+      border-radius: var(--radius-md);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+    .nav-btn svg { width: 24px; height: 24px; fill: currentColor; }
+    .nav-btn:hover { background-color: var(--btn-hover); color: var(--text-main); }
+    .nav-btn.active { background-color: var(--btn-active); color: #000000; }
+    
+    .nav-btn.create-btn { margin-top: auto; margin-bottom: 0; }
 
-**Update (edit) — optimized screen flow:**
-- Entering edit (from the modal's **Edit**) loads the post into the Create form, switches to the Create page, and **scrolls to the top** so the form is in view.
-- Show an **edit-mode banner** ("Editing post. Saving will update the existing post. Choosing a new image/video replaces it; leave empty to keep current media."), change the heading to **Edit Post**, and change the submit button to **Update**.
-- A **Cancel edit** button resets the form and returns to Portfolio.
-- Selecting a new image/MP4 replaces the existing URL; no new file keeps the existing media.
-- **On successful create or update:** reset the form, return to **Portfolio**, and **scroll to the top** for a clean landing. On failure, keep inputs and show the error inline.
+    /* Main Area */
+    #main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+    }
 
-**Delete**: confirm dialog first, then delete the row from `posts`.
+    /* Navbar */
+    #navbar {
+      height: 80px;
+      padding: 0 10%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background-color: transparent;
+    }
 
-## Media handling
-- Images: `.png`, `.jpg`, `.jpeg`, `.webp`. Videos: `.mp4` only. Resume: `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`.
-- Single public bucket `portfolio-media`, separated by path:
-  - post images → `images/`
-  - post videos → `videos/`
-  - profile image → `profile/image/`
-  - resume → `resumes/`
-- Save returned public URLs to `posts.image_url`, `posts.video_url`, `profile.profile_image_url`, `profile.resume_url`.
-- If the DB write fails after upload, delete the just-uploaded file from Storage (cleanup).
-- New video **file uploads** and **direct video URLs** go to `posts.video_url`. **YouTube URLs** go to `posts.youtube_url` and render as an embedded player.
+    /* 로고 이미지 */
+    #logo { 
+      height: 48px; 
+      width: 48px;
+      object-fit: cover;
+      border-radius: 50%;
+      cursor: pointer; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5); 
+      transition: transform 0.2s ease;
+    }
+    #logo:active {
+      transform: scale(0.9);
+    }
 
-## Supabase SQL — run once (idempotent)
-```sql
--- UUID helper
-create extension if not exists "pgcrypto";
+    /* 소셜 아이콘 호버 크기 커지는 효과 */
+    .social-links { display: flex; gap: 16px; }
+    .social-links a {
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      transition: background-color 0.3s ease, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .social-links a:hover { 
+      background-color: var(--sub-bg); 
+      transform: scale(1.2); 
+    }
 
--- posts
-create table if not exists posts (
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  content text,
-  author text,
-  image_url text,
-  video_url text,
-  youtube_url text,
-  prompt text,
-  created_at timestamp with time zone default now()
-);
-alter table posts
-  add column if not exists content text,
-  add column if not exists author text,
-  add column if not exists image_url text,
-  add column if not exists video_url text,
-  add column if not exists youtube_url text,
-  add column if not exists prompt text,
-  add column if not exists created_at timestamp with time zone default now();
-alter table posts enable row level security;
-drop policy if exists "Public can read posts" on posts;
-create policy "Public can read posts" on posts for select using (true);
-drop policy if exists "Public can insert posts" on posts;
-create policy "Public can insert posts" on posts for insert with check (true);
-drop policy if exists "Public can update posts" on posts;
-create policy "Public can update posts" on posts for update using (true) with check (true);
-drop policy if exists "Public can delete posts" on posts;
-create policy "Public can delete posts" on posts for delete using (true);
+    /* Page Container */
+    #page-container {
+      flex: 1;
+      padding: 40px 10%;
+    }
+    .page { display: none; animation: fadeUp 0.4s ease forwards; }
+    .page.active { display: block; }
 
--- profile
-create table if not exists profile (
-  id uuid primary key default gen_random_uuid(),
-  name text,
-  bio text,
-  interests text,
-  profile_image_url text,
-  resume_url text,
-  created_at timestamp with time zone default now(),
-  updated_at timestamp with time zone default now()
-);
-alter table profile
-  add column if not exists name text,
-  add column if not exists bio text,
-  add column if not exists interests text,
-  add column if not exists profile_image_url text,
-  add column if not exists resume_url text,
-  add column if not exists created_at timestamp with time zone default now(),
-  add column if not exists updated_at timestamp with time zone default now();
-create or replace function set_updated_at()
-returns trigger as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$ language plpgsql;
-drop trigger if exists set_profile_updated_at on profile;
-create trigger set_profile_updated_at
-before update on profile
-for each row execute function set_updated_at();
-alter table profile enable row level security;
-drop policy if exists "Public can read profile" on profile;
-create policy "Public can read profile" on profile for select using (true);
-drop policy if exists "Public can insert profile" on profile;
-create policy "Public can insert profile" on profile for insert with check (true);
-drop policy if exists "Public can update profile" on profile;
-create policy "Public can update profile" on profile for update using (true) with check (true);
-drop policy if exists "Public can delete profile" on profile;
-create policy "Public can delete profile" on profile for delete using (true);
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
--- storage bucket
-insert into storage.buckets (id, name, public)
-values ('portfolio-media', 'portfolio-media', true)
-on conflict (id) do update set public = true;
+    /* Footer */
+    footer {
+      padding: 40px 10%;
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
 
--- storage policies
-drop policy if exists "Public can read portfolio media" on storage.objects;
-create policy "Public can read portfolio media" on storage.objects for select using (bucket_id = 'portfolio-media');
-drop policy if exists "Public can upload portfolio media" on storage.objects;
-create policy "Public can upload portfolio media" on storage.objects for insert with check (bucket_id = 'portfolio-media');
-drop policy if exists "Public can update portfolio media" on storage.objects;
-create policy "Public can update portfolio media" on storage.objects for update using (bucket_id = 'portfolio-media') with check (bucket_id = 'portfolio-media');
-drop policy if exists "Public can delete portfolio media" on storage.objects;
-create policy "Public can delete portfolio media" on storage.objects for delete using (bucket_id = 'portfolio-media');
-```
+    /* ==========================================================================
+       Portfolio Page (Masonry)
+       ========================================================================== */
+    .masonry-grid {
+      column-width: 240px;
+      column-gap: 24px;
+      width: 100%;
+    }
+
+    .card {
+      break-inside: avoid;
+      margin-bottom: 24px;
+      background-color: var(--card-bg);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: translateZ(0); 
+    }
+
+    .card-media-wrapper {
+      position: relative;
+      width: 100%;
+      background-color: var(--sub-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .card-media-wrapper img, .card-media-wrapper video.cover-vid {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: cover;
+    }
+
+    .hover-video {
+      position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+      opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+    }
+    .hover-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0); transition: background 0.3s ease; pointer-events: none;
+    }
+    .card:hover .hover-overlay { background: rgba(0,0,0,0.5); }
+    .card:hover .hover-video { opacity: 1; }
+
+    .card-info { padding: 16px; }
+    .card-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; word-break: break-word; line-height: 1.4; color: var(--text-main); }
+    .card-author { font-size: 13px; color: var(--text-muted); }
+
+    /* ==========================================================================
+       Detail Modal
+       ========================================================================== */
+    #modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+      display: none; align-items: center; justify-content: center;
+      z-index: 9999; padding: 24px;
+      opacity: 0; transition: opacity 0.3s ease;
+    }
+    #modal-backdrop.open { display: flex; opacity: 1; }
+    
+    #modal-content {
+      background: var(--card-bg);
+      width: 100%; max-width: 680px; max-height: 90vh;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      display: flex; flex-direction: column;
+      transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #modal-backdrop.open #modal-content { transform: scale(1); }
+
+    .modal-close {
+      position: absolute; top: -16px; right: -16px;
+      width: 40px; height: 40px; border-radius: 50%;
+      background: #333333; color: #FFFFFF;
+      box-shadow: var(--shadow-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; font-weight: 300; z-index: 10;
+    }
+    .modal-close:hover { background: #555555; }
+
+    .modal-scroll-area {
+      overflow-y: auto;
+      width: 100%;
+      border-radius: var(--radius-lg);
+    }
+
+    #modal-media { background: #000; width: 100%; }
+    #modal-media img, #modal-media video { width: 100%; height: auto; display: block; max-height: 70vh; object-fit: contain; }
+    #modal-media iframe { width: 100%; aspect-ratio: 16/9; border: none; display: block; }
+
+    .modal-body { padding: 32px; display: flex; flex-direction: column; gap: 24px; }
+    .modal-header .title { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+    .modal-header .author { color: var(--text-muted); font-size: 14px; }
+    .modal-desc { font-size: 15px; line-height: 1.6; white-space: pre-wrap; color: var(--text-main); }
+    
+    .prompt-box { background: var(--sub-bg); padding: 20px; border-radius: var(--radius-md); }
+    .prompt-box .label { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 8px; }
+    .prompt-box .text { font-size: 14px; line-height: 1.5; white-space: pre-wrap; color: var(--text-main); }
+    
+    .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 8px; }
+
+    /* ==========================================================================
+       Profile Page
+       ========================================================================== */
+    .profile-layout { display: flex; gap: 48px; align-items: flex-start; }
+    @media (max-width: 800px) { .profile-layout { flex-direction: column; } }
+
+    .profile-left { flex: 0 0 40%; max-width: 400px; display: flex; flex-direction: column; gap: 8px; width: 100%; }
+    .profile-img-preview {
+      width: 100%; aspect-ratio: 1/1; background-color: var(--sub-bg);
+      border-radius: var(--radius-lg); overflow: hidden; display: flex; align-items: center; justify-content: center;
+    }
+    .profile-img-preview img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .profile-right { flex: 1; display: flex; flex-direction: column; gap: 24px; width: 100%; }
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+    .form-group label { font-weight: 700; font-size: 14px; color: var(--text-muted); }
+
+    .resume-preview-box {
+      width: 100%; background: var(--sub-bg); border-radius: var(--radius-md); overflow: hidden;
+      display: none; flex-direction: column; align-items: center; justify-content: center; margin-top: 8px;
+    }
+    .resume-preview-box iframe { width: 100%; height: 420px; border: none; background: #fff; } 
+    .resume-preview-box img { width: 100%; max-height: 380px; object-fit: contain; }
+
+    /* ==========================================================================
+       Create / Edit Page
+       ========================================================================== */
+    .form-header { margin-bottom: 32px; }
+    .form-title { font-size: 28px; font-weight: 700; margin-bottom: 12px; color: var(--text-main); }
+    .edit-banner {
+      background-color: var(--sub-bg); color: var(--text-main); padding: 16px;
+      border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; display: none;
+    }
+    
+    .create-form { display: flex; flex-direction: column; gap: 24px; max-width: 700px; }
+    .media-card { background: var(--sub-bg); padding: 24px; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 16px; }
+    
+    .file-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .file-name { font-size: 14px; color: var(--text-muted); }
+    
+    .status-msg { font-size: 14px; font-weight: 600; }
+    .status-error { color: #ff6b6b; } 
+    .status-success { color: #4ade80; } 
+
+  </style>
+</head>
+<body>
+
+  <script>
+    const VITE_SUPABASE_URL = "https://wlkrwlatqeyljirigepq.supabase.co";
+    const VITE_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_yYqQ9WHvawno4rgy4MSuYw_mxszrGT6";
+    const VITE_SUPABASE_STORAGE_BUCKET = "portfolio-media";
+    const VITE_YOUTUBE_CHANNEL_URL = "https://youtube.com/@ygleeee?si=Lnpgca_45oLl7uVC";
+    const VITE_INSTAGRAM_URL = "https://www.instagram.com/"; 
+    
+    // 얼굴 사진 로고 설정 
+    const VITE_LOGO_SRC = "./my-logo.png";
+  </script>
+
+  <svg style="display:none;">
+    <defs>
+      <path id="ic-portfolio" d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 4h4v2h-4V4zm10 16H4v-3h16v3zm0-5H4V8h16v7z"/>
+      <path id="ic-profile" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+      <path id="ic-create" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+    </defs>
+  </svg>
+
+  <div id="app-container">
+    <aside id="sidebar">
+      <button class="nav-btn active" data-target="portfolio" onclick="navigate('portfolio')">
+        <svg><use href="#ic-portfolio"></use></svg>Portfolio
+      </button>
+      <button class="nav-btn" data-target="profile" onclick="navigate('profile')">
+        <svg><use href="#ic-profile"></use></svg>Profile
+      </button>
+      <button class="nav-btn create-btn" data-target="create" onclick="enterCreate()">
+        <svg><use href="#ic-create"></use></svg>Create
+      </button>
+    </aside>
+
+    <main id="main-content">
+      <header id="navbar">
+        <img id="logo" alt="YG 용갈" onclick="handleLogoClick()" />
+        
+        <div class="social-links">
+          <a id="link-yt" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" style="width: 24px; height: 24px;">
+              <path style="fill: #FF0000;" d="M21.58 7.19c-.23-.86-.91-1.54-1.77-1.77C18.25 5 12 5 12 5s-6.25 0-7.81.42c-.86.23-1.54.91-1.77 1.77C2 8.75 2 12 2 12s0 3.25.42 4.81c.23.86.91 1.54 1.77 1.77C5.75 19 12 19 12 19s6.25 0 7.81-.42c.86-.23 1.54-.91 1.77-1.77C22 15.25 22 12 22 12s0-3.25-.42-4.81z"/>
+              <path style="fill: #FFFFFF;" d="M9.75 15.02V8.98L15.5 12l-5.75 3.02z"/>
+            </svg>
+          </a>
+          <a id="link-ig" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" style="width: 24px; height: 24px;">
+              <defs>
+                <linearGradient id="ig-grad" x1="20%" y1="100%" x2="80%" y2="0%">
+                  <stop offset="0%" stop-color="#f09433" />
+                  <stop offset="25%" stop-color="#e6683c" />
+                  <stop offset="50%" stop-color="#dc2743" />
+                  <stop offset="75%" stop-color="#cc2366" />
+                  <stop offset="100%" stop-color="#bc1888" />
+                </linearGradient>
+              </defs>
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="url(#ig-grad)" />
+              <path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 8.2a3.2 3.2 0 1 1 0-6.4 3.2 3.2 0 0 1 0 6.4zm4.2-7.4a1.2 1.2 0 1 1-2.4 0 1.2 1.2 0 0 1 2.4 0z" fill="#fff" />
+            </svg>
+          </a>
+        </div>
+      </header>
+
+      <div id="page-container">
+        
+        <section id="page-portfolio" class="page active">
+          <div class="masonry-grid" id="portfolio-grid">
+            </div>
+        </section>
+
+        <section id="page-profile" class="page">
+          <div class="profile-layout">
+            <div class="profile-left">
+              <div class="profile-img-preview" id="profile-img-preview">
+                </div>
+              <div style="height: 4px;"></div>
+              <button class="btn" onclick="document.getElementById('profile-img-input').click()">Image upload</button>
+              <input type="file" id="profile-img-input" accept=".png,.jpg,.jpeg,.webp" style="display:none;" onchange="handleProfileImageSelect(event)">
+            </div>
+            
+            <div class="profile-right">
+              <div class="form-group">
+                <label>이름</label>
+                <input type="text" id="profile-name">
+              </div>
+              <div class="form-group">
+                <label>한 줄 소개</label>
+                <input type="text" id="profile-bio">
+              </div>
+              <div class="form-group">
+                <label>관심 분야</label>
+                <input type="text" id="profile-interests">
+              </div>
+              
+              <div class="form-group">
+                <label>Resume</label>
+                <div class="file-row">
+                  <button class="btn" onclick="document.getElementById('profile-resume-input').click()">Select Resume</button>
+                  <span id="resume-file-name" class="file-name">No file selected</span>
+                </div>
+                <input type="file" id="profile-resume-input" accept=".pdf,.png,.jpg,.jpeg,.webp" style="display:none;" onchange="handleResumeSelect(event)">
+                
+                <div id="resume-preview-container" class="resume-preview-box"></div>
+                <a id="resume-external-link" target="_blank" style="display:none; font-size:14px; color:var(--text-main); font-weight:700; margin-top:8px;">Open in new tab ↗</a>
+              </div>
+
+              <div style="margin-top:16px;">
+                <button class="btn" id="btn-save-profile" onclick="saveProfile()">Save Profile</button>
+                <span id="profile-status" class="status-msg" style="margin-left: 12px;"></span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="page-create" class="page">
+          <div class="form-header">
+            <h2 class="form-title" id="create-heading">Create Post</h2>
+            <div class="edit-banner" id="edit-banner">
+              Editing post. Saving will update the existing post. Choosing a new image/video replaces it; leave empty to keep current media.
+            </div>
+          </div>
+
+          <div class="create-form">
+            <div class="form-group">
+              <label>Title</label>
+              <input type="text" id="post-title" placeholder="Post title">
+            </div>
+            <div class="form-group">
+              <label>Author</label>
+              <input type="text" id="post-author" placeholder="Author name">
+            </div>
+            <div class="form-group">
+              <label>Content</label>
+              <textarea id="post-content" rows="4" placeholder="Description..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>GENERATION PROMPT</label>
+              <textarea id="post-prompt" rows="3" placeholder="Enter prompt used..."></textarea>
+            </div>
+            
+            <div class="media-card">
+              <div class="form-group">
+                <label>Cover Image</label>
+                <div class="file-row">
+                  <button class="btn" onclick="document.getElementById('post-img-input').click()">Select Image</button>
+                  <span id="post-img-name" class="file-name">No image selected</span>
+                </div>
+                <input type="file" id="post-img-input" accept=".png,.jpg,.jpeg,.webp" style="display:none;" onchange="updateFileName('post-img-input', 'post-img-name')">
+              </div>
+
+              <div class="form-group" style="margin-top: 8px;">
+                <label>Video (Upload MP4 OR Paste URL)</label>
+                <div class="file-row" style="margin-bottom: 8px;">
+                  <button class="btn" onclick="document.getElementById('post-vid-input').click()">Select MP4 File</button>
+                  <span id="post-vid-name" class="file-name">No video selected</span>
+                </div>
+                <input type="file" id="post-vid-input" accept=".mp4" style="display:none;" onchange="updateFileName('post-vid-input', 'post-vid-name')">
+                
+                <input type="text" id="post-vid-url" placeholder="Paste YouTube or Direct Video URL...">
+                <div id="video-url-note" style="font-size:13px; color:var(--text-muted); margin-top:4px; display:none;"></div>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:16px; margin-top: 8px;">
+              <button class="btn" id="btn-save-post" onclick="savePost()">Submit</button>
+              <button class="btn" id="btn-cancel-edit" style="display:none; background:transparent; box-shadow: inset 0 0 0 1px var(--btn-hover);" onclick="cancelEdit()">Cancel Edit</button>
+              <span id="post-status" class="status-msg" style="align-self: center;"></span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <footer>
+        영화사 길 | 대장 이용길<br>
+        email: 알아서 뭐하게<br>
+        address: 안드로메다<br>
+        Copyright @ Yonggil Lee 2026
+      </footer>
+    </main>
+  </div>
+
+  <div id="modal-backdrop" onclick="closeModal(event)">
+    <div id="modal-content" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()">×</button>
+      
+      <div class="modal-scroll-area">
+        <div id="modal-media" style="display:none;"></div>
+        
+        <div class="modal-body">
+          <div class="modal-header">
+            <div class="title" id="modal-title"></div>
+            <div class="author" id="modal-author"></div>
+          </div>
+          
+          <div class="modal-desc" id="modal-desc"></div>
+          
+          <div id="modal-prompt-area" class="prompt-box" style="display:none;">
+            <div class="label">GENERATION PROMPT</div>
+            <div class="text" id="modal-prompt"></div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn" onclick="editCurrentPost()">Edit</button>
+            <button class="btn" style="background-color: #d93025; color: #FFFFFF;" onclick="deleteCurrentPost()">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
 
-## Final checklist
-- [ ] Supabase URL uses **`.supabase.co`**; all `VITE_*` constants declared at top and used (Supabase, logo, social URLs).
-- [ ] TPC logo renders at top; **no "JunTube" title or subtitle** anywhere; **clicking the logo returns to Portfolio (home)**.
-- [ ] **No layout lines/borders** — separation via whitespace, shade contrast, and shadows only.
-- [ ] Sidebar is **narrow**; all buttons site-wide are **unified gray** (active = darker gray).
-- [ ] Top navbar shows **YouTube, Instagram, Threads** icon links opening in new tabs.
-- [ ] Portfolio grid is true masonry: **narrow uniform card width, varied heights**.
-- [ ] Hover **changes image shading**; **video cards auto-play on hover** (muted/looped), reset on leave.
-- [ ] Profile image upload button reads **"Image upload"** with an immediate local preview.
-- [ ] **Resume upload shows an inline preview** (image thumbnail or PDF embed) for both newly selected and stored files.
-- [ ] Create page has a dedicated **Generation Prompt** textarea.
-- [ ] **Video accepts a file _or_ a URL:** YouTube URL → `posts.youtube_url` (embedded `<iframe>` + thumbnail cover); direct link/upload → `posts.video_url` (`<video>`).
-- [ ] **Detail modal polished:** floating × close, no empty-media gap (broken images removed), prompt card, right-aligned Edit/Delete, fade/pop animation.
-- [ ] **Edit flow optimized:** edit-mode banner + heading/button change, video URL restored, scroll-to-top on entering edit and after save/cancel.
-- [ ] Image and video (file or URL) upload + save verified; video-only (no image) posts save and render.
-- [ ] On save/update failure, text and file selections are preserved and stray uploads are cleaned up.
-- [ ] Supabase connection verified.
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+    // 팡파레 라이브러리 불러오기
+    import confetti from 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.module.mjs';
+
+    // 1. Initial Setup
+    document.getElementById('logo').src = VITE_LOGO_SRC;
+    document.getElementById('link-yt').href = VITE_YOUTUBE_CHANNEL_URL;
+    document.getElementById('link-ig').href = VITE_INSTAGRAM_URL;
+
+    let supabase;
+    if (VITE_SUPABASE_URL && VITE_SUPABASE_PUBLISHABLE_KEY) {
+      supabase = createClient(VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY);
+    }
+
+    // App State
+    window.appState = {
+      posts: [],
+      profile: null,
+      editingPostId: null,
+      currentModalPost: null,
+      profileImgFile: null,
+      profileResumeFile: null
+    };
+
+    // 2. Navigation & UI Helpers
+    window.navigate = function(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.target === pageId);
+      });
+      document.getElementById(`page-${pageId}`).classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      if (pageId === 'portfolio') loadPosts();
+      if (pageId === 'profile') loadProfile();
+    }
+
+    // 로고 클릭 팡파레 이벤트 함수
+    window.handleLogoClick = function() {
+      confetti({
+        particleCount: 120,    
+        spread: 80,            
+        origin: { x: 0.5, y: 0.4 }, 
+        colors: ['#ff0000', '#ffffff', '#ffcc00', '#00ccff', '#00ffcc']
+      });
+      navigate('portfolio');
+    }
+
+    function showStatus(elId, msg, isError) {
+      const el = document.getElementById(elId);
+      el.textContent = msg;
+      el.className = `status-msg ${isError ? 'status-error' : 'status-success'}`;
+      setTimeout(() => el.textContent = '', 4000);
+    }
+
+    function extractYouTubeId(url) {
+      if(!url) return null;
+      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|shorts\/))([\w-]{11})/);
+      return match ? match[1] : null;
+    }
+
+    function genFilename(file) {
+      const ext = file.name.split('.').pop();
+      return `${Date.now()}-${Math.random().toString(36).substring(2,7)}.${ext}`;
+    }
+
+    function escapeHTML(str) {
+      if(!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    // 3. Hover Video Playback
+    window.playVid = function(el) {
+      const vid = el.querySelector('.hover-video');
+      if(vid) vid.play().catch(()=>{});
+    }
+    window.pauseVid = function(el) {
+      const vid = el.querySelector('.hover-video');
+      if(vid) { vid.pause(); vid.currentTime = 0; }
+    }
+
+    // 4. Portfolio (Masonry)
+    async function loadPosts() {
+      if (!supabase) return;
+      const { data, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
+      if (data) {
+        window.appState.posts = data;
+        renderMasonry(data);
+      }
+    }
+
+    function renderMasonry(posts) {
+      const grid = document.getElementById('portfolio-grid');
+      grid.innerHTML = '';
+      
+      posts.forEach(post => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.onclick = () => openModal(post);
+        
+        let mediaHtml = '';
+        const ytId = extractYouTubeId(post.youtube_url);
+        
+        let coverSrc = post.image_url;
+        if (!coverSrc && ytId) coverSrc = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+
+        if (coverSrc) {
+           mediaHtml = `<img src="${coverSrc}" alt="cover" onerror="this.remove()">`;
+           if (post.video_url) {
+             mediaHtml += `<video src="${post.video_url}" muted loop playsinline preload="none" class="hover-video"></video>`;
+             card.onmouseenter = function() { playVid(this); };
+             card.onmouseleave = function() { pauseVid(this); };
+           }
+           mediaHtml += `<div class="hover-overlay"></div>`;
+        } else if (post.video_url) {
+           mediaHtml = `<video src="${post.video_url}" muted loop playsinline preload="metadata" class="cover-vid hover-video"></video>
+                        <div class="hover-overlay"></div>`;
+           card.onmouseenter = function() { playVid(this); };
+           card.onmouseleave = function() { pauseVid(this); };
+        } else {
+           mediaHtml = `<div style="padding:40px 20px; text-align:center; color:var(--text-muted);">No Media</div>`;
+        }
+
+        let infoHtml = `
+          <div class="card-info">
+            ${post.title ? `<div class="card-title">${escapeHTML(post.title)}</div>` : ''}
+            ${post.author ? `<div class="card-author">by ${escapeHTML(post.author)}</div>` : ''}
+          </div>
+        `;
+        
+        card.innerHTML = `<div class="card-media-wrapper">${mediaHtml}</div>${infoHtml}`;
+        grid.appendChild(card);
+      });
+    }
+
+    // 5. Detail Modal
+    window.openModal = function(post) {
+      window.appState.currentModalPost = post;
+      const mMedia = document.getElementById('modal-media');
+      mMedia.innerHTML = '';
+      mMedia.style.display = 'none';
+
+      let mediaElem = null;
+      if (post.video_url) {
+        mediaElem = document.createElement('video');
+        mediaElem.src = post.video_url;
+        mediaElem.controls = true;
+        mediaElem.autoplay = true;
+      } else if (post.youtube_url) {
+        const ytId = extractYouTubeId(post.youtube_url);
+        if (ytId) {
+          mediaElem = document.createElement('iframe');
+          mediaElem.src = `https://www.youtube.com/embed/${ytId}?autoplay=1`;
+          mediaElem.allow = "autoplay; fullscreen";
+        }
+      } else if (post.image_url) {
+        mediaElem = document.createElement('img');
+        mediaElem.src = post.image_url;
+        mediaElem.onerror = function(){ this.remove(); };
+      }
+
+      if (mediaElem) {
+        mMedia.appendChild(mediaElem);
+        mMedia.style.display = 'block';
+      }
+
+      const t = document.getElementById('modal-title');
+      t.textContent = post.title || '';
+      t.style.display = post.title ? 'block' : 'none';
+
+      const a = document.getElementById('modal-author');
+      a.textContent = post.author ? `by ${post.author}` : '';
+      a.style.display = post.author ? 'block' : 'none';
+
+      const d = document.getElementById('modal-desc');
+      const contentStr = post.content ? post.content.trim() : '';
+      d.textContent = contentStr;
+      d.style.display = contentStr ? 'block' : 'none';
+
+      const pArea = document.getElementById('modal-prompt-area');
+      const pText = document.getElementById('modal-prompt');
+      const promptStr = post.prompt ? post.prompt.trim() : '';
+      pText.textContent = promptStr;
+      pArea.style.display = promptStr ? 'block' : 'none';
+
+      document.getElementById('modal-backdrop').classList.add('open');
+    }
+
+    window.closeModal = function(e) {
+      if (e && e.target !== document.getElementById('modal-backdrop')) return;
+      document.getElementById('modal-backdrop').classList.remove('open');
+      document.getElementById('modal-media').innerHTML = ''; // Stop video/audio
+      window.appState.currentModalPost = null;
+    }
+
+    // 6. Create / Edit Flow
+    
+    // 🔥 항상 새 글 쓰기 창으로 폼을 깨끗하게 비우는 버그 수정 완료 🔥
+    window.enterCreate = function() {
+      resetCreateForm();
+      navigate('create');
+    }
+
+    window.updateFileName = function(inputId, spanId) {
+      const f = document.getElementById(inputId).files[0];
+      document.getElementById(spanId).textContent = f ? f.name : 'No file selected';
+    }
+
+    window.editCurrentPost = function() {
+      const p = window.appState.currentModalPost;
+      if(!p) return;
+      closeModal();
+      window.appState.editingPostId = p.id;
+      
+      document.getElementById('create-heading').textContent = 'Edit Post';
+      document.getElementById('edit-banner').style.display = 'block';
+      document.getElementById('btn-save-post').textContent = 'Update';
+      document.getElementById('btn-cancel-edit').style.display = 'inline-block';
+      
+      document.getElementById('post-title').value = p.title || '';
+      document.getElementById('post-author').value = p.author || '';
+      document.getElementById('post-content').value = p.content || '';
+      document.getElementById('post-prompt').value = p.prompt || '';
+      
+      document.getElementById('post-img-name').textContent = p.image_url ? '(Current image kept)' : 'No image selected';
+      document.getElementById('post-vid-name').textContent = p.video_url && !p.video_url.startsWith('http') ? '(Current video file kept)' : 'No video selected';
+      
+      document.getElementById('post-vid-url').value = p.youtube_url || (p.video_url && p.video_url.startsWith('http') ? p.video_url : '');
+      
+      const note = document.getElementById('video-url-note');
+      if (p.video_url && !p.video_url.startsWith('http')) {
+         note.textContent = "A video file is currently saved. Pasting a URL or uploading a new file will replace it.";
+         note.style.display = 'block';
+      } else {
+         note.style.display = 'none';
+      }
+
+      navigate('create');
+    }
+
+    window.cancelEdit = function() {
+      resetCreateForm();
+      navigate('portfolio');
+    }
+
+    function resetCreateForm() {
+      window.appState.editingPostId = null;
+      document.getElementById('create-heading').textContent = 'Create Post';
+      document.getElementById('edit-banner').style.display = 'none';
+      document.getElementById('btn-save-post').textContent = 'Submit';
+      document.getElementById('btn-cancel-edit').style.display = 'none';
+      
+      ['post-title','post-author','post-content','post-prompt','post-img-input','post-vid-input','post-vid-url'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('post-img-name').textContent = 'No image selected';
+      document.getElementById('post-vid-name').textContent = 'No video selected';
+      document.getElementById('video-url-note').style.display = 'none';
+    }
+
+    window.savePost = async function() {
+      const title = document.getElementById('post-title').value.trim();
+      if(!title) { showStatus('post-status', 'Title is required.', true); return; }
+
+      const btn = document.getElementById('btn-save-post');
+      btn.disabled = true; btn.textContent = 'Saving...';
+
+      let imgFile = document.getElementById('post-img-input').files[0];
+      let vidFile = document.getElementById('post-vid-input').files[0];
+      let vidUrlText = document.getElementById('post-vid-url').value.trim();
+
+      const isEdit = !!window.appState.editingPostId;
+      const currentPost = isEdit ? window.appState.posts.find(x => x.id === window.appState.editingPostId) : null;
+
+      let finalImgUrl = isEdit ? currentPost.image_url : null;
+      let finalVidUrl = isEdit ? currentPost.video_url : null;
+      let finalYtUrl = isEdit ? currentPost.youtube_url : null;
+      let uploadedPaths = [];
+
+      try {
+        if (imgFile) {
+          const path = `images/${genFilename(imgFile)}`;
+          const { error } = await supabase.storage.from(VITE_SUPABASE_STORAGE_BUCKET).upload(path, imgFile);
+          if (error) throw error;
+          uploadedPaths.push(path);
+          finalImgUrl = supabase.storage.from(VITE_SUPABASE_STORAGE_BUCKET).getPublicUrl(path).data.publicUrl;
+        }
+
+        if (vidFile) {
+           const path = `videos/${genFilename(vidFile)}`;
+           const { error } = await supabase.storage.from(VITE_SUPABASE_STORAGE_BUCKET).upload(path, vidFile);
+           if (error) throw error;
+           uploadedPaths.push(path);
+           finalVidUrl = supabase.storage.from(VITE_SUPABASE_STORAGE_BUCKET).getPublicUrl(path).data.publicUrl;
+           finalYtUrl = null; // file supersedes url
+        } else if (vidUrlText) {
+           if (extractYouTubeId(vidUrlText)) {
+             finalYtUrl = vidUrlText;
+             finalVidUrl = null;
+           } else {
+             finalVidUrl = vidUrlText;
+             finalYtUrl = null;
+           }
+        }
+
+        const payload = {
+          title,
+          author: document.getElementById('post-author').value.trim(),
+          content: document.getElementById('post-content').value.trim(),
+          prompt: document.getElementById('post-prompt').value.trim(),
+          image_url: finalImgUrl,
+          video_url: finalVidUrl,
+          youtube_url: finalYtUrl
+        };
+
+        if (isEdit) {
+          const { error } = await supabase.from('posts').update(payload).eq('id', window.appState.editingPostId);
+          if(error) throw error;
+        } else {
+          const { error } = await supabase.from('posts').insert(payload);
+          if(error) throw error;
+        }
+
+        resetCreateForm();
+        navigate('portfolio');
+        
+      } catch (err) {
+        showStatus('post-status', 'Error: ' + err.message, true);
+        if (uploadedPaths.length > 0) {
+           await supabase.storage.from(VITE_SUPABASE_STORAGE_BUCKET).remove(uploadedPaths);
+        }
+      } finally {
+        btn.disabled = false; btn.textContent = isEdit ? 'Update' : 'Submit';
+      }
+    }
+
+    window.deleteCurrentPost = async function() {
+      const p = window.appState.currentModalPost;
+      if(!p) return;
+      if(!confirm('Are you sure you want to delete this post?')) return;
+      
+      closeModal();
+      const { error } = await supabase.from('posts').delete().eq('id', p.id);
+      if(!error) loadPosts();
+      else alert('Delete failed: ' + error.message);
+    }
+
+    // 7. Profile Flow
+    async function loadProfile() {
+      if(!supabase) return;
+      const { data, error } = await supabase.from('profile').select('*').limit(1).maybeSingle();
+      
+      if (data) {
+        window.appState.profile = data;
+        document.getElementById('profile-name').value = data.name || '';
+        document.getElementById('profile-bio').value = data.bio || '';
+        document.getElementById('profile-interests').value = data.interests || '';
+        
+        if (data.profile_image_url) {
+          document.getElementById('profile-img-preview').innerHTML = `<img src="${data.profile_image_url}">`;
+        }
+        if (data.resume_url) {
+          renderResumePreview(data.resume_url, 'Stored Resume');
+        }
+      }
+    }
+
+    window.handleProfileImageSelect = function(e) {
+      const file = e.target.files[0];
+      if(!file) return;
+      window.appState.profileImgFile = file;
+      document.getElementById('profile-img-preview').innerHTML = `<img src="${URL.createObjectURL(file)}">`;
+    }
+
+    window.handleResumeSelect = function(e) {
+      const file = e.target.files[0];
+      if(!file) return;
+      window.appState.profileResumeFile = file;
+      document.getElementById('resume-file-name').textContent = file.name;
+      renderResumePreview(URL.createObjectURL(file), file.name);
+    }
+
+    function renderResumePreview(url, nameDesc) {
+      const container = document.getElementById('resume-preview-container');
+      container.innerHTML = '';
+      container.style.display = 'flex';
+      
+      const link = document.getElementById('resume-external-link');
+      link.href = url;
+      link.style.display = 'inline-block';
+
+      const isPdf = url.toLowerCase().includes('.pdf') || nameDesc.toLowerCase().endsWith('.pdf');
+      
+      if (isPdf) {
+         container.innerHTML = `<iframe src="${url}"></iframe>`;
+      } else {
+         container.innerHTML = `<img src="${url}" onerror="this.style.display='none'">`;
+      }
+    }
+
+    window.saveProfile = async function() {
+      const btn = document.getElementById('btn-save-profile');
+      btn.disabled = true; btn.textContent = 'Saving...';
+      
+      let finalImgUrl = window.appState.profile?.profile_image_url || null;
+      let finalResumeUrl = window.appState.profile?.resume_url || null;
+      let uploadedPaths = [];
+
+      try {
+        if (window.appState.profileImgFile) {
+          const path = `profile/image/${genFilename(window.appState.profileImgFile)}`;
+          const { error } = await supabase.storage.from(VITE_SUPABASE_STORAGE_BUCKET).upload(path, window.appState.profileImgFile);
+          if (error) throw error;
+          uploadedPaths.push(path);
+          finalImgUrl = supabase.storage.from(VITE_SUPABASE_STORAGE_BUCKET).getPublicUrl(path).data.publicUrl;
+        }
+
+        if (window.appState.profileResumeFile) {
+          const path = `resumes/${genFilename(window.appState.profileResumeFile)}`;
+          const { error } = await supabase.storage.from(VITE_SUPABASE_STORAGE_BUCKET).upload(path, window.appState.profileResumeFile);
+          if (error) throw error;
+          uploadedPaths.push(path);
+          finalResumeUrl = supabase.storage.from(VITE_SUPABASE_STORAGE_BUCKET).getPublicUrl(path).data.publicUrl;
+        }
+
+        const payload = {
+          name: document.getElementById('profile-name').value.trim(),
+          bio: document.getElementById('profile-bio').value.trim(),
+          interests: document.getElementById('profile-interests').value.trim(),
+          profile_image_url: finalImgUrl,
+          resume_url: finalResumeUrl
+        };
+
+        if (window.appState.profile?.id) {
+           const { error } = await supabase.from('profile').update(payload).eq('id', window.appState.profile.id);
+           if (error) throw error;
+        } else {
+           const { error } = await supabase.from('profile').insert(payload);
+           if (error) throw error;
+        }
+
+        showStatus('profile-status', 'Saved!', false);
+        window.appState.profileImgFile = null;
+        window.appState.profileResumeFile = null;
+        loadProfile();
+
+      } catch (err) {
+        showStatus('profile-status', 'Error: ' + err.message, true);
+        if (uploadedPaths.length > 0) {
+           await supabase.storage.from(VITE_SUPABASE_STORAGE_BUCKET).remove(uploadedPaths);
+        }
+      } finally {
+        btn.disabled = false; btn.textContent = 'Save Profile';
+      }
+    }
+
+    // 8. Init
+    document.addEventListener('DOMContentLoaded', () => {
+      if(supabase) {
+        navigate('portfolio');
+      } else {
+        document.getElementById('portfolio-grid').innerHTML = '<div style="padding:40px; color:var(--text-muted);">Please configure Supabase URL and Key in the source code.</div>';
+      }
+    });
+  </script>
+</body>
+</html>
