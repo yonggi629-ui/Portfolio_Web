@@ -1,0 +1,245 @@
+
+## Goal
+- Build **one self-contained `index.html`** portfolio site for a film/video student, wired to Supabase for data and file storage.
+-O utput must be a single downloadable HTML file. Deploy target: Vercel.
+ 
+
+## Tech stack
+HTML (single file) · Vite · Supabase (Postgres + Storage) · Vercel.
+
+## Constants — declare at the top of the file and use everywhere
+```js
+const VITE_SUPABASE_URL = "";   // .supabase.co (NOT .com)
+const VITE_SUPABASE_PUBLISHABLE_KEY = "";
+const VITE_SUPABASE_STORAGE_BUCKET = "portfolio-media";
+const VITE_YOUTUBE_CHANNEL_URL = "https://www.youtube.com/";
+const VITE_INSTAGRAM_URL = "https://www.instagram.com/";   // TODO: set the real Instagram URL
+const VITE_LOGO_SRC = "./logo.png";                        // TODO: replace with the TPC logo (file next to index.html, base64 data URI, or inline SVG)
+```
+
+## Brand & copy
+- **Logo replaces all hero text.** Render the given company logo at the top-left of the navbar. 
+— the logo alone represents the brand.
+  - TPC logo: bold, black ‘YG’ text, and the white wordmark **용갈이** beneath. May be embedded as an inline SVG so the file stays self-contained.
+- **Clicking the logo returns to the main home (the Portfolio page)** and scrolls to top. Use a pointer cursor so it reads as a home link.
+- Keep the following strings in **Korean exactly as written** (do not translate):
+  - Profile field labels: **이름**, **한 줄 소개**, **관심 분야**
+  - Footer (render exactly):
+    ```
+    영화사 길 | 대장 이용길
+    email: 알아서 뭐하게
+    address: 안드로메다
+    Copyright @ Yonggil Lee 2026 
+    ```
+- Sidebar button labels (English): **Profile**, **Portfolio**, **Create**.
+- Profile image upload button label (English): **Image upload**.
+- All other UI copy is in English.
+
+## Color system
+- Main (background): `#FFFFFF`
+- Sub (secondary surfaces, sidebar): `#F5F5F5`
+- **Buttons — unified gray across every page** (no blue/accent buttons anywhere):
+  - Default: background `#E0E0E0`, text `#333333`.
+  - Hover: background `#D0D0D0`.
+  - Active/selected (e.g. current sidebar tab): background `#9E9E9E`, text `#FFFFFF`.
+- Use solid fills plus subtle shadows for depth. The brand blue (`#1659D6`) appears **only inside the logo** — never as a page background, border, or button.
+
+## Design direction — simple, Pinterest-inspired gallery
+- **Reference: Pinterest portfolio aesthetic.** Masonry card grid, image-first, minimal chrome, content does the talking.
+- Typography: **Pretendard** throughout.
+- Horizontal page padding: **10% left and right.**
+- **No layout lines / dividers / borders.** No navbar bottom border, no sidebar border, no rule lines between sections. Separate regions with whitespace, background-shade contrast (Main vs Sub), and restrained shadows only.
+- Cards, modals, and forms must read clearly and feel uncluttered.
+- Fully responsive: text and buttons never overlap on mobile or desktop.
+
+### Avoid (no generic "AI-generated" look)
+- No purple/indigo gradient defaults, no rainbow gradients, no glassmorphism.
+- No emoji used as UI icons; use simple line icons.
+- No oversized hero section, no decorative filler. Treat it like a clean editorial gallery for a filmmaker.
+
+## Top navbar (height 80px)
+- **Left:** company logo (`VITE_LOGO_SRC` / inline TPC SVG), ~48px height, width auto. No title/subtitle text. Clicking it returns to Portfolio (home) and scrolls to top.
+- **Right:** three social icon links rendered as simple line/brand icons (no text labels):
+  - YouTube → `VITE_YOUTUBE_CHANNEL_URL`
+  - Instagram → `VITE_INSTAGRAM_URL`
+  - Threads → `VITE_THREADS_URL`
+  - Each opens in a new tab. Icon size ~24px, gray (`#333333`), subtle hover.
+- **No bottom border** on the navbar.
+
+## Left sidebar (narrow)
+- Background: Sub color. **No border** — separated from content by background contrast and whitespace only.
+- **Narrow width** (~120px), icon-forward.
+- Buttons: **Portfolio**, **Profile**, **Create**. Each has its icon **above** its label. Font: Pretendard Bold, ~14–16px (scaled to the narrow bar).
+- Buttons use the unified **gray** palette; the active button uses the gray active state (`#9E9E9E` background, white text).
+- Place the **Create** button on its own, slightly above the bottom of the sidebar.
+- Icons: Profile = person, Portfolio = briefcase, Create = "+".
+- Clicking a button switches to that page (single-page client routing). On every page switch, scroll the content to the top.
+
+## Pages
+
+### Profile
+- Left ~40%: square profile image area (up to 700×700px, responsive). 4px gap below it, then the **Image upload** button (gray).
+- Profile image: upload, replace, save. Show an immediate local preview of a newly chosen image before saving.
+- **Resume: upload, replace, save — with an inline preview.**
+  - Accept `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`.
+  - On selecting a file (before saving) **and** when an existing resume is loaded, render a **preview**:
+    - Image file → thumbnail `<img>` (max-height ~380px, contained).
+    - PDF file → embedded `<iframe>` preview (~420px tall, white background).
+    - Other/unknown → fallback "open file" link.
+  - Also show an "Open in new tab" link for the stored resume.
+- **본인 이름**, **한줄 소개**, **관심 분야**: single-line white text inputs, editable and saved.
+- All Profile data persists to the `profile` table; image/resume to Storage. On save failure, keep inputs and clean up any just-uploaded files.
+
+### Portfolio (default landing — and the logo's home target)
+- Pinterest-style responsive **masonry** grid; show the grid immediately.
+- **Card width: narrow and uniform** (~240px). **Card height varies per item, following the media's natural aspect ratio** (true masonry — staggered heights, no fixed/cropped card height). Each card shows cover image, title, author.
+- **Hover interaction:**
+  - On hover over a card's media, change the overlay shading (smooth dark overlay transition) to signal interactivity.
+  - If the card's media is a **video**, it **auto-plays on hover** (muted, looped, inline) and pauses/resets when the pointer leaves.
+- Posts with **video only** (no image) must still render as cards (use the video frame as the cover).
+- **Card click → detail modal** (polished, gallery-style):
+  - Shows title (bold, ~24px), author rendered as muted "by {author}", content, and the generation prompt in a soft rounded card with an uppercase letter-spaced "GENERATION PROMPT" label.
+  - Media priority: an uploaded/direct video (`posts.video_url`) plays via `<video controls>`; otherwise a `posts.youtube_url` plays via a responsive 16:9 YouTube `<iframe>` embed; otherwise show the image with rounded top corners. (On portfolio cards, a YouTube post uses its thumbnail `https://img.youtube.com/vi/{id}/hqdefault.jpg` as the cover; the full player opens in the modal.)
+  - **No empty media gap:** hide the media area entirely when there is no media, and remove broken images on error (`onerror`) so hotlink-blocked URLs don't leave blank space. Empty author/content/tags collapse rather than leaving gaps. Trim leading/trailing whitespace on all text.
+  - A floating round **×** close button sits at the top-right; **Edit** and **Delete** (gray) are right-aligned in the footer.
+  - Subtle entrance: backdrop fade + a gentle pop/scale-in. Rounded corners (~20px), deep shadow, max-width ~680px.
+
+### Create — Post CRUD (implement in code)
+**Create form fields**: title, content, author, image file, **MP4 video file _or_ a pasted video URL**, and a dedicated **Generation Prompt** input area (multi-line textarea, persists to `posts.prompt`).
+- **Video input — file or URL:** accept either an uploaded `.mp4` file **or** a pasted video URL.
+  - A pasted **YouTube** link (watch / `youtu.be` / shorts / embed forms) is saved to `posts.youtube_url`; any other (direct) video link is saved to `posts.video_url`.
+  - A freshly uploaded file wins and supersedes any previous URL (clear the other column on save).
+  - On edit, surface an existing URL (YouTube or pasted direct link) in the URL field so it can be changed; uploaded files show a "(current video kept)" note.
+- Either an image **or** an MP4 is enough to save (image-less, video-only posts allowed).
+- On save: upload files to Storage, store public URLs in `posts`.
+- If saving fails, **keep the entered text and selected files** and clean up any just-uploaded files. Reset the form **only on success**.
+
+**Update (edit) — optimized screen flow:**
+- Entering edit (from the modal's **Edit**) loads the post into the Create form, switches to the Create page, and **scrolls to the top** so the form is in view.
+- Show an **edit-mode banner** ("Editing post. Saving will update the existing post. Choosing a new image/video replaces it; leave empty to keep current media."), change the heading to **Edit Post**, and change the submit button to **Update**.
+- A **Cancel edit** button resets the form and returns to Portfolio.
+- Selecting a new image/MP4 replaces the existing URL; no new file keeps the existing media.
+- **On successful create or update:** reset the form, return to **Portfolio**, and **scroll to the top** for a clean landing. On failure, keep inputs and show the error inline.
+
+**Delete**: confirm dialog first, then delete the row from `posts`.
+
+## Media handling
+- Images: `.png`, `.jpg`, `.jpeg`, `.webp`. Videos: `.mp4` only. Resume: `.pdf`, `.png`, `.jpg`, `.jpeg`, `.webp`.
+- Single public bucket `portfolio-media`, separated by path:
+  - post images → `images/`
+  - post videos → `videos/`
+  - profile image → `profile/image/`
+  - resume → `resumes/`
+- Save returned public URLs to `posts.image_url`, `posts.video_url`, `profile.profile_image_url`, `profile.resume_url`.
+- If the DB write fails after upload, delete the just-uploaded file from Storage (cleanup).
+- New video **file uploads** and **direct video URLs** go to `posts.video_url`. **YouTube URLs** go to `posts.youtube_url` and render as an embedded player.
+
+## Supabase SQL — run once (idempotent)
+```sql
+-- UUID helper
+create extension if not exists "pgcrypto";
+
+-- posts
+create table if not exists posts (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  content text,
+  author text,
+  image_url text,
+  video_url text,
+  youtube_url text,
+  prompt text,
+  created_at timestamp with time zone default now()
+);
+alter table posts
+  add column if not exists content text,
+  add column if not exists author text,
+  add column if not exists image_url text,
+  add column if not exists video_url text,
+  add column if not exists youtube_url text,
+  add column if not exists prompt text,
+  add column if not exists created_at timestamp with time zone default now();
+alter table posts enable row level security;
+drop policy if exists "Public can read posts" on posts;
+create policy "Public can read posts" on posts for select using (true);
+drop policy if exists "Public can insert posts" on posts;
+create policy "Public can insert posts" on posts for insert with check (true);
+drop policy if exists "Public can update posts" on posts;
+create policy "Public can update posts" on posts for update using (true) with check (true);
+drop policy if exists "Public can delete posts" on posts;
+create policy "Public can delete posts" on posts for delete using (true);
+
+-- profile
+create table if not exists profile (
+  id uuid primary key default gen_random_uuid(),
+  name text,
+  bio text,
+  interests text,
+  profile_image_url text,
+  resume_url text,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+alter table profile
+  add column if not exists name text,
+  add column if not exists bio text,
+  add column if not exists interests text,
+  add column if not exists profile_image_url text,
+  add column if not exists resume_url text,
+  add column if not exists created_at timestamp with time zone default now(),
+  add column if not exists updated_at timestamp with time zone default now();
+create or replace function set_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+drop trigger if exists set_profile_updated_at on profile;
+create trigger set_profile_updated_at
+before update on profile
+for each row execute function set_updated_at();
+alter table profile enable row level security;
+drop policy if exists "Public can read profile" on profile;
+create policy "Public can read profile" on profile for select using (true);
+drop policy if exists "Public can insert profile" on profile;
+create policy "Public can insert profile" on profile for insert with check (true);
+drop policy if exists "Public can update profile" on profile;
+create policy "Public can update profile" on profile for update using (true) with check (true);
+drop policy if exists "Public can delete profile" on profile;
+create policy "Public can delete profile" on profile for delete using (true);
+
+-- storage bucket
+insert into storage.buckets (id, name, public)
+values ('portfolio-media', 'portfolio-media', true)
+on conflict (id) do update set public = true;
+
+-- storage policies
+drop policy if exists "Public can read portfolio media" on storage.objects;
+create policy "Public can read portfolio media" on storage.objects for select using (bucket_id = 'portfolio-media');
+drop policy if exists "Public can upload portfolio media" on storage.objects;
+create policy "Public can upload portfolio media" on storage.objects for insert with check (bucket_id = 'portfolio-media');
+drop policy if exists "Public can update portfolio media" on storage.objects;
+create policy "Public can update portfolio media" on storage.objects for update using (bucket_id = 'portfolio-media') with check (bucket_id = 'portfolio-media');
+drop policy if exists "Public can delete portfolio media" on storage.objects;
+create policy "Public can delete portfolio media" on storage.objects for delete using (bucket_id = 'portfolio-media');
+```
+
+
+## Final checklist
+- [ ] Supabase URL uses **`.supabase.co`**; all `VITE_*` constants declared at top and used (Supabase, logo, social URLs).
+- [ ] TPC logo renders at top; **no "JunTube" title or subtitle** anywhere; **clicking the logo returns to Portfolio (home)**.
+- [ ] **No layout lines/borders** — separation via whitespace, shade contrast, and shadows only.
+- [ ] Sidebar is **narrow**; all buttons site-wide are **unified gray** (active = darker gray).
+- [ ] Top navbar shows **YouTube, Instagram, Threads** icon links opening in new tabs.
+- [ ] Portfolio grid is true masonry: **narrow uniform card width, varied heights**.
+- [ ] Hover **changes image shading**; **video cards auto-play on hover** (muted/looped), reset on leave.
+- [ ] Profile image upload button reads **"Image upload"** with an immediate local preview.
+- [ ] **Resume upload shows an inline preview** (image thumbnail or PDF embed) for both newly selected and stored files.
+- [ ] Create page has a dedicated **Generation Prompt** textarea.
+- [ ] **Video accepts a file _or_ a URL:** YouTube URL → `posts.youtube_url` (embedded `<iframe>` + thumbnail cover); direct link/upload → `posts.video_url` (`<video>`).
+- [ ] **Detail modal polished:** floating × close, no empty-media gap (broken images removed), prompt card, right-aligned Edit/Delete, fade/pop animation.
+- [ ] **Edit flow optimized:** edit-mode banner + heading/button change, video URL restored, scroll-to-top on entering edit and after save/cancel.
+- [ ] Image and video (file or URL) upload + save verified; video-only (no image) posts save and render.
+- [ ] On save/update failure, text and file selections are preserved and stray uploads are cleaned up.
+- [ ] Supabase connection verified.
